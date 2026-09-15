@@ -4,15 +4,16 @@
 中的 Team 22（XiaomiMM）提交为基础，保留官方 SPANV2 网络、checkpoint、CUDA 算子和评测
 入口，并使用 SPAN 作者维护的 BasicSR 1.4.2 分支补齐训练流程。
 
-项目提供两条独立训练路线：
+项目提供三条独立训练路线：
 
 | 路线 | 训练网络 | 用途 | 启动脚本 |
 |---|---|---|---|
 | 单分支对照 | `SPANV2ESR` | 直接训练官方提交态拓扑，作为对照实验 | `start_stage1_tmux.sh`、`start_stage2_tmux.sh` |
 | REP 多分支 | `SPANV2ESRRep` | 按 SPAN 谱系假设使用训练态 `Conv3XC`，再融合为提交态拓扑 | `start_rep_tmux.sh stage1\|stage2` |
+| SAFMN FFT 消融 | `SPANV2ESRRep` | 仅将 Stage 1 FFT 归一化改为 SAFMN 默认 `backward` | `start_rep_tmux.sh stage1-safmn` |
 
 **普通的 `start_stage1_tmux.sh` 不是 REP 训练。** 当前建议优先运行 REP 路线验证官方指标；
-单分支路线用于衡量结构重参数化带来的增益。两条路线均采用 micro-batch 8、梯度累计 8 次，
+单分支路线用于衡量结构重参数化带来的增益。三条路线均采用 micro-batch 8、梯度累计 8 次，
 单卡有效全局 batch 为 64。
 
 ## 1. 依据与边界
@@ -48,6 +49,7 @@
 │   ├── stage1_report.yaml            # 单分支 Stage 1
 │   ├── stage2_report.yaml            # 单分支 Stage 2
 │   ├── stage1_rep_report.yaml        # REP Stage 1
+│   ├── stage1_rep_safmn_fft.yaml     # REP Stage 1，SAFMN 默认 FFT 消融
 │   └── stage2_rep_report.yaml        # REP Stage 2
 ├── scripts/
 │   ├── prepare_datasets.py           # 数据下载、LR 生成和 DF2K 软链接
@@ -121,8 +123,9 @@ python scripts/prepare_datasets.py \
 
 ## 5. 共同训练协议
 
-两条路线只在卷积的训练态参数化上不同，数据、损失、优化器、调度器、EMA 和训练步数保持
-一致，以便把 REP 作为单变量实验。
+单分支和 REP 基线只在卷积的训练态参数化上不同；SAFMN FFT 路线则只改变 FFT
+normalization。其余数据、优化器、调度器、EMA 和训练步数保持一致，保证每次比较只有一个
+主要变量。
 
 | 设置 | Stage 1 | Stage 2 |
 |---|---|---|
@@ -134,6 +137,11 @@ python scripts/prepare_datasets.py \
 | 最低学习率 | `1e-6` | `1e-6` |
 | EMA | `0.999` | `0.999` |
 | 数据增强 | 随机翻转和 90 度旋转 | 随机翻转和 90 度旋转 |
+
+报告只公布 FFT loss 权重为 0.05，没有公布归一化方式。基线配置显式使用 `fft_norm: ortho`；
+SAFMN 消融使用 `fft_norm: backward`，等价于源码中的 `torch.fft.rfft2(x)`。两者都对实部和
+虚部分别计算 mean L1。默认 FFT 的系数尺度随 crop 面积变化，因此该实验必须从随机初始化
+重新训练，不能从 `ortho` checkpoint 恢复。
 
 挑战报告只公开 batch 8/GPU，没有公开 GPU 数。本项目根据 SPAN、SPANF 的训练线索假设全局
 batch 为 64，并在单卡上使用：
@@ -204,6 +212,29 @@ python scripts/export_spanv2_rep.py \
 导出会将多分支 `Conv3XC` 融合为单个 3x3 卷积，得到与官方提交模型兼容的 139,104 参数
 部署拓扑。
 
+### 6.4 SAFMN 标准 FFT 消融
+
+该路线只改变 Stage 1 的 FFT normalization，网络、随机种子、数据顺序、crop、全局 batch、
+优化器、学习率和 EMA 均与 REP `ortho` 基线一致。它使用独立实验目录与 W&B Run：
+
+```bash
+cd /home/qhm/projects/SPANV2_official
+bash scripts/start_rep_tmux.sh stage1-safmn
+tmux attach -t spanv2-stage1-rep-safmn-fft
+```
+
+输出目录：
+
+```text
+experiments/spanv2_stage1_rep_fd2k_safmn_fft_gb64
+```
+
+中断后只允许从该目录自己的完整 checkpoint 恢复：
+
+```bash
+bash scripts/start_rep_tmux.sh stage1-safmn --resume-iter 100000
+```
+
 ## 7. 单分支对照训练
 
 这条路线直接优化官方提交态 `SPANV2ESR`，不会启用 REP 多分支。它用于与 REP 结果做公平
@@ -235,6 +266,9 @@ Stage 2 加载同路线 Stage 1 的 `params_ema`，输出到
 # REP 路线
 bash scripts/start_rep_tmux.sh stage1 --resume-iter 650000
 
+# SAFMN FFT 消融路线
+bash scripts/start_rep_tmux.sh stage1-safmn --resume-iter 100000
+
 # 单分支路线
 bash scripts/start_stage1_tmux.sh --resume-iter 650000
 ```
@@ -250,6 +284,7 @@ bash scripts/start_stage1_tmux.sh --resume-iter 650000
 
 ```bash
 tmux detach-client -s spanv2-stage1-rep
+tmux detach-client -s spanv2-stage1-rep-safmn-fft
 tmux detach-client -s spanv2-stage2-rep
 tmux detach-client -s spanv2-stage1
 tmux detach-client -s spanv2-stage2
@@ -260,12 +295,12 @@ RNG、W&B Run ID、epoch 内已完成的 micro-batch 和数据配置签名。恢
 快进已处理数据，再从下一个累计窗口开始，因此模型状态和数据游标对应同一个 iteration。
 
 改变 micro-batch、累计次数、worker 数、数据扩大倍率、随机种子、crop 列表或 meta-info 后，
-签名检查会拒绝精确恢复。旧的有效 batch=8 checkpoint 不能用于新的 batch=64 实验；四份配置
+签名检查会拒绝精确恢复。旧的有效 batch=8 checkpoint 不能用于新的 batch=64 实验；各配置
 使用独立的 `_gb64` 目录，避免误恢复旧状态。
 
 ## 9. W&B 日志
 
-W&B 是唯一训练可视化后端，四份配置均写入 `SPANV2` Project：
+W&B 是唯一训练可视化后端，所有训练配置均写入 `SPANV2` Project：
 
 ```bash
 wandb login
@@ -297,7 +332,7 @@ iteration 记录一次；为控制额外开销，仅分析该 iteration 的最�
 | 是否使用训练态 REP | 提供 REP 推荐路线和单分支对照路线，尚无官方源码直接确认 |
 | 全局 batch | 假设为 64，单卡 micro-batch 8，累计 8 次 |
 | 八种 crop 的精确列表 | 256/320/384/448/512 方形，加 256x384、384x512、512x384 |
-| FFT loss | `norm="ortho"` 的 `rfft2`，实部和虚部分别计算 L1，权重 0.05 |
+| FFT loss | 保留 `ortho` 基线，并提供 SAFMN 默认 `backward` 单变量消融；二者均为实部/虚部 L1，权重 0.05 |
 | Gradient loss | 水平、垂直一阶有限差分的 L1 之和，权重 3.0 |
 | Stage 2 初始化 | 同路线 Stage 1 第 100 万步 checkpoint 的 `params_ema` |
 | 本地验证协议 | DIV2K 0801-0900，RGB PSNR，裁去 4 像素边界 |
@@ -329,7 +364,41 @@ CUDA_VISIBLE_DEVICES=0 python test_demo_team22.py \
 模型还应保持 139,104 参数，且训练态与融合部署态的随机输入误差不超过 `2e-6` 量级。达到
 指标只能说明数值复现成功，不能证明所有未公开训练细节均与官方实现完全一致。
 
-## 12. 参考资料
+## 12. 版本记录
+
+| 版本 | Git 分支/标签 | 训练语义 | 状态 |
+|---|---|---|---|
+| Ortho 基线 | `repro/ortho-fft`、`v0.1.0-ortho-fft` | `rfft2(norm="ortho")`，REP，全局 batch64 | 训练中断于 697100；最后完整 checkpoint 为 690000 |
+| SAFMN FFT | `experiment/safmn-fft`、`v0.2.0-safmn-fft` | 默认 `rfft2`，即 `norm="backward"`；其余设置与基线相同 | 当前实验 |
+
+版本只记录代码与实验协议，不提交 `experiments/`、W&B 缓存、数据集或 checkpoint。每个实验
+使用独立配置名、实验目录和 W&B Run，避免 `--auto_resume` 跨实验误恢复。
+
+## 13. Git 版本管理
+
+推荐保留两个远端：`upstream` 指向挑战官方仓库，只用于同步；`origin` 指向个人 fork，用于
+上传分支。`main` 只放验证通过的稳定版本，复现基线使用 `repro/<主题>`，单变量实验使用
+`experiment/<变量>`，达到里程碑后再打带说明的标签。
+
+```bash
+git fetch upstream
+git switch experiment/safmn-fft
+git push -u origin experiment/safmn-fft
+git push origin v0.2.0-safmn-fft
+```
+
+新消融从当前稳定版本创建，配置和输出目录必须同时改名：
+
+```bash
+git switch main
+git switch -c experiment/<实验名>
+```
+
+提交信息采用 `类型: 内容`，例如 `feat: add SAFMN FFT ablation`、
+`fix: align resume data cursor`、`docs: record Stage 1 results`。只有完整可复现的里程碑才使用
+`v<主版本>.<次版本>.<修订号>-<实验>` 标签，不为每个训练 checkpoint 打 Git 标签。
+
+## 14. 参考资料
 
 - [SPAN 论文与官方 BasicSR 代码](https://github.com/hongyuanyu/SPAN)
 - [NTIRE 2024 Efficient Super-Resolution Challenge Report](https://arxiv.org/abs/2404.10343)

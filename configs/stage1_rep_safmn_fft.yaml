@@ -1,5 +1,5 @@
-# SPANV2 Stage 1 with the SPAN-family training-time Conv3XC parameterization.
-name: spanv2_stage1_rep_fd2k_report_gb64
+# SPANV2 Stage 1 REP ablation using SAFMN's default unnormalized FFT loss.
+name: spanv2_stage1_rep_fd2k_safmn_fft_gb64
 model_type: SRModel
 scale: 4
 num_gpu: 1
@@ -76,7 +76,7 @@ train:
     type: L1FFTReportLoss
     l1_weight: 1.0
     fft_weight: 0.05
-    fft_norm: ortho
+    fft_norm: backward
     reduction: mean
 
 val:
@@ -95,8 +95,8 @@ logger:
   wandb:
     project: SPANV2
     entity: ~
-    group: rep_reproduction
-    tags: [stage1, rep, df2k, x4, global-batch-64]
+    group: fft_ablation
+    tags: [stage1, rep, df2k, x4, global-batch-64, safmn-fft, backward]
     resume_id: ~
     resume_mode: resume
 

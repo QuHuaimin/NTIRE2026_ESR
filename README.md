@@ -30,6 +30,9 @@ training guide and complete commands.
 
 The standard `start_stage1_tmux.sh` runs the single-branch control. Use
 `start_rep_tmux.sh stage1` to train the REP multi-branch model.
+Use `start_rep_tmux.sh stage1-safmn` for the isolated SAFMN default-FFT
+normalization experiment. Version and branch conventions are documented in
+[`README_TRAINING.md`](README_TRAINING.md#13-git-版本管理).
 
 ---
 

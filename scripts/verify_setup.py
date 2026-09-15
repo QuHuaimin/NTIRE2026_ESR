@@ -31,8 +31,10 @@ def main():
     stage1 = yaml_load(str(PROJECT_ROOT / 'configs' / 'stage1_report.yaml'))
     stage2 = yaml_load(str(PROJECT_ROOT / 'configs' / 'stage2_report.yaml'))
     stage1_rep = yaml_load(str(PROJECT_ROOT / 'configs' / 'stage1_rep_report.yaml'))
+    stage1_rep_safmn = yaml_load(
+        str(PROJECT_ROOT / 'configs' / 'stage1_rep_safmn_fft.yaml'))
     stage2_rep = yaml_load(str(PROJECT_ROOT / 'configs' / 'stage2_rep_report.yaml'))
-    for options in (stage1, stage2, stage1_rep, stage2_rep):
+    for options in (stage1, stage2, stage1_rep, stage1_rep_safmn, stage2_rep):
         assert 'use_tb_logger' not in options['logger']
         assert options['logger']['wandb']['project'] == 'SPANV2'
         assert options['num_gpu'] == 1
@@ -57,6 +59,8 @@ def main():
     print(f'Official model + BasicSR registry OK: output={tuple(output.shape)}, params={parameters:,}')
 
     build_loss(stage1['train']['pixel_opt'])
+    safmn_loss = build_loss(stage1_rep_safmn['train']['pixel_opt'])
+    assert safmn_loss.fft_norm == 'backward'
     build_loss(stage2['train']['pixel_opt'])
     rep_model = build_network(stage1_rep['network_g']).eval()
     deployed_model = build_network(stage1['network_g']).eval()
@@ -68,7 +72,7 @@ def main():
     assert torch.allclose(rep_output, deployed_output, rtol=1e-5, atol=2e-6)
     assert len(rep_model.state_dict()) > len(deployed_model.state_dict())
     assert sum(value.numel() for value in rep_model.deploy_state_dict().values()) == 139104
-    print('BasicSR report losses, four YAML files, and REP deployment state OK')
+    print('BasicSR report losses, five YAML files, and REP deployment state OK')
 
     root = Path(args.dataset_root)
     div_hr = root / 'DIV2K' / 'HR'

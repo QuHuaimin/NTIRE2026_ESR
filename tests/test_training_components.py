@@ -308,7 +308,11 @@ class TrainingComponentsTest(unittest.TestCase):
         prediction = torch.zeros(1, 3, 16, 16, requires_grad=True)
         target = torch.ones_like(prediction)
         stage1_loss = build_loss({
-            'type': 'L1FFTReportLoss', 'l1_weight': 1.0, 'fft_weight': 0.05})
+            'type': 'L1FFTReportLoss', 'l1_weight': 1.0, 'fft_weight': 0.05,
+            'fft_norm': 'ortho'})
+        safmn_stage1_loss = build_loss({
+            'type': 'L1FFTReportLoss', 'l1_weight': 1.0, 'fft_weight': 0.05,
+            'fft_norm': 'backward'})
         stage2_loss = build_loss({
             'type': 'MSEGradientReportLoss', 'mse_weight': 5.0, 'gradient_weight': 3.0})
         total = stage1_loss(prediction, target) + stage2_loss(prediction, target)
@@ -343,7 +347,19 @@ class TrainingComponentsTest(unittest.TestCase):
             torch.stack((pred_fft.real, pred_fft.imag), dim=-1),
             torch.stack((target_fft.real, target_fft.imag), dim=-1))
         torch.testing.assert_close(
-            _fft_distance(fft_prediction, fft_target), expected_fft)
+            _fft_distance(fft_prediction, fft_target, norm='ortho'), expected_fft)
+
+        safmn_pred_fft = torch.fft.rfft2(fft_prediction)
+        safmn_target_fft = torch.fft.rfft2(fft_target)
+        expected_safmn_fft = F.l1_loss(
+            torch.stack((safmn_pred_fft.real, safmn_pred_fft.imag), dim=-1),
+            torch.stack((safmn_target_fft.real, safmn_target_fft.imag), dim=-1))
+        torch.testing.assert_close(
+            _fft_distance(fft_prediction, fft_target, norm='backward'),
+            expected_safmn_fft)
+        torch.testing.assert_close(
+            safmn_stage1_loss.loss_components(fft_prediction, fft_target)['fft'],
+            0.05 * expected_safmn_fft)
 
         parameter = torch.nn.Parameter(torch.ones(()))
         optimizer = torch.optim.AdamW([parameter], lr=5e-4)

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: $0 stage1|stage2 [--resume-iter N] [--wandb-mode resume|rewind|fork] [--session NAME]" >&2
+    echo "Usage: $0 stage1|stage1-safmn|stage2 [--resume-iter N] [--wandb-mode resume|rewind|fork] [--session NAME]" >&2
     [[ $# -gt 0 ]] && exit 0
     exit 2
 fi
@@ -14,12 +14,16 @@ case "${STAGE}" in
         CONFIG="configs/stage1_rep_report.yaml"
         SESSION_NAME="spanv2-stage1-rep"
         ;;
+    stage1-safmn)
+        CONFIG="configs/stage1_rep_safmn_fft.yaml"
+        SESSION_NAME="spanv2-stage1-rep-safmn-fft"
+        ;;
     stage2)
         CONFIG="configs/stage2_rep_report.yaml"
         SESSION_NAME="spanv2-stage2-rep"
         ;;
     *)
-        echo "Unknown stage: ${STAGE}; expected stage1 or stage2" >&2
+        echo "Unknown stage: ${STAGE}; expected stage1, stage1-safmn, or stage2" >&2
         exit 2
         ;;
 esac
@@ -45,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: $0 stage1|stage2 [--resume-iter N] [--wandb-mode resume|rewind|fork] [--session NAME]"
+            echo "Usage: $0 stage1|stage1-safmn|stage2 [--resume-iter N] [--wandb-mode resume|rewind|fork] [--session NAME]"
             exit 0
             ;;
         *)

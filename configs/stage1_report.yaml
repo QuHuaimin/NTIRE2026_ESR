@@ -77,6 +77,7 @@ train:
     type: L1FFTReportLoss
     l1_weight: 1.0
     fft_weight: 0.05
+    fft_norm: ortho
     reduction: mean
 
 val:
