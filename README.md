@@ -20,6 +20,19 @@
 
 ---
 
+## SPANV2 Training Reproduction
+
+This fork adds a BasicSR training pipeline for Team 22 SPANV2, including the
+recommended training-time REP topology, a single-branch control, two-stage
+training, global-batch-64 gradient accumulation, exact checkpoint resume, and
+W&B logging. See [`README_TRAINING.md`](README_TRAINING.md) for the Chinese
+training guide and complete commands.
+
+The standard `start_stage1_tmux.sh` runs the single-branch control. Use
+`start_rep_tmux.sh stage1` to train the REP multi-branch model.
+
+---
+
 ## 📰 News
 
 - 🏆 **June 28th, 2026:** All team submissions, checkpoints, and final results are now released!
@@ -30,6 +43,7 @@
 
 ## 📋 Table of Contents
 
+- [SPANV2 Training Reproduction](#spanv2-training-reproduction)
 - [About the Challenge](#-about-the-challenge)
 - [Environment Setup](#%EF%B8%8F-environment-setup)
 - [Dataset Preparation](#-dataset-preparation)

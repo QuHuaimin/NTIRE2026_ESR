@@ -124,11 +124,11 @@ __global__ void span_attention_shared_fp32_kernel(
 // -------------------- FP16 General Version --------------------
 template <int BLOCK_SIZE = 256>
 __global__ void span_attention_general_fp16_kernel(
-    const at::Half* __restrict__ feat_low,
-    const at::Half* __restrict__ feat_deep,
-    const at::Half* __restrict__ weight,
-    const at::Half* __restrict__ bias,
-    at::Half* __restrict__ output,
+    const half* __restrict__ feat_low,
+    const half* __restrict__ feat_deep,
+    const half* __restrict__ weight,
+    const half* __restrict__ bias,
+    half* __restrict__ output,
     int batch_size, int channels, int height, int width) {
     
     const int tid = threadIdx.x;
@@ -274,11 +274,11 @@ at::Tensor span_attention_forward_cuda_general_fp16(
     weight = weight.contiguous();
     bias = bias.contiguous();
 
-    const at::Half* feat_low_ptr = feat_low.data_ptr<at::Half>();
-    const at::Half* feat_deep_ptr = feat_deep.data_ptr<at::Half>();
-    const at::Half* weight_ptr = weight.data_ptr<at::Half>();
-    const at::Half* bias_ptr = bias.data_ptr<at::Half>();
-    at::Half* output_ptr = output.data_ptr<at::Half>();
+    const half* feat_low_ptr = reinterpret_cast<const half*>(feat_low.data_ptr<at::Half>());
+    const half* feat_deep_ptr = reinterpret_cast<const half*>(feat_deep.data_ptr<at::Half>());
+    const half* weight_ptr = reinterpret_cast<const half*>(weight.data_ptr<at::Half>());
+    const half* bias_ptr = reinterpret_cast<const half*>(bias.data_ptr<at::Half>());
+    half* output_ptr = reinterpret_cast<half*>(output.data_ptr<at::Half>());
 
     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 

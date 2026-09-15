@@ -1,0 +1,31 @@
+name: spanv2_official
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pip
+  - ninja
+  - pip:
+      # The official challenge used torch 1.13.1+cu117. CUDA 11.8 is
+      # installed on this workstation, so the tested local profile uses
+      # the matching cu118 build for extension compilation.
+      - --extra-index-url https://download.pytorch.org/whl/cu118
+      - torch==2.4.1+cu118
+      - torchvision==0.19.1+cu118
+      - numpy==1.26.4
+      - Pillow==10.4.0
+      - PyYAML==6.0.2
+      - tqdm==4.66.5
+      - opencv-python==4.10.0.84
+      - addict==2.4.0
+      - future==1.0.0
+      - lmdb==1.5.1
+      - requests==2.32.3
+      - scikit-image==0.24.0
+      - scipy==1.13.1
+      - wandb==0.24.2
+      - yapf==0.40.2
+      - fvcore==0.1.5.post20221221
+      - gdown==5.2.0

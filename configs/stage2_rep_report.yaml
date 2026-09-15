@@ -1,0 +1,97 @@
+# SPANV2 Stage 2 initialized from the REP Stage 1 EMA checkpoint.
+name: spanv2_stage2_rep_fd2k_report_gb64
+model_type: SRModel
+scale: 4
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  train:
+    name: DF2K
+    type: PairedImageDataset
+    dataroot_gt: /home/qhm/datasets/DF2K/HR
+    dataroot_lq: /home/qhm/datasets/DF2K/LR/X4
+    meta_info_file: /home/qhm/datasets/DF2K/meta_info_DF2K.txt
+    filename_tmpl: '{}x4'
+    io_backend:
+      type: disk
+    gt_size: 512
+    use_hflip: true
+    use_rot: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 8
+    dataset_enlarge_ratio: 100
+    persistent_workers: false
+    prefetch_mode: ~
+
+  val:
+    name: DIV2K100
+    type: PairedImageDataset
+    dataroot_gt: /home/qhm/datasets/DIV2K/HR
+    dataroot_lq: /home/qhm/datasets/DIV2K_bicubic/LR/X4
+    meta_info_file: /home/qhm/datasets/DIV2K/meta_info_DIV2K_valid.txt
+    filename_tmpl: '{}x4'
+    io_backend:
+      type: disk
+
+network_g:
+  type: SPANV2ESRRep
+  num_in_ch: 3
+  num_out_ch: 3
+  feature_channels: 32
+  upscale: 4
+  bias: false
+  use_span_attn: false
+
+path:
+  pretrain_network_g: /home/qhm/projects/SPANV2_official/experiments/spanv2_stage1_rep_fd2k_report_gb64/models/net_g_1000000.pth
+  param_key_g: params_ema
+  strict_load_g: true
+  resume_state: ~
+
+train:
+  ema_decay: 0.999
+  gradient_accumulation_steps: 8
+  optim_g:
+    type: AdamW
+    lr: !!float 5e-4
+    betas: [0.9, 0.99]
+    weight_decay: !!float 1e-4
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [600000, 400000]
+    restart_weights: [1, 0.5]
+    eta_min: !!float 1e-6
+  total_iter: 1000000
+  warmup_iter: -1
+  gradient_diagnostics_interval: 1000
+  pixel_opt:
+    type: MSEGradientReportLoss
+    mse_weight: 5.0
+    gradient_weight: 3.0
+    reduction: mean
+
+val:
+  val_freq: !!float 1e4
+  save_img: false
+  pbar: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 4
+      test_y_channel: false
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  wandb:
+    project: SPANV2
+    entity: ~
+    group: rep_reproduction
+    tags: [stage2, rep, df2k, x4, global-batch-64]
+    resume_id: ~
+    resume_mode: resume
+
+dist_params:
+  backend: nccl
+  port: 29500

@@ -85,11 +85,11 @@ __global__ void __launch_bounds__(256, 2) span_attention_48ch_shared_kernel(
 // ==================== 48通道 FP16 版本 ====================
 // 优化策略：half2向量化weight加载 + HMMA
 __global__ void __launch_bounds__(256, 2) span_attention_48ch_half_kernel(
-    const at::Half* __restrict__ feat_low,
-    const at::Half* __restrict__ feat_deep,
-    const at::Half* __restrict__ weight,
-    const at::Half* __restrict__ bias,
-    at::Half* __restrict__ output,
+    const half* __restrict__ feat_low,
+    const half* __restrict__ feat_deep,
+    const half* __restrict__ weight,
+    const half* __restrict__ bias,
+    half* __restrict__ output,
     int height, int width) {
     
     __align__(16) __shared__ half weight_shared[48 * 48];
@@ -223,11 +223,11 @@ __global__ void __launch_bounds__(256, 4) span_attention_32ch_shared_kernel(
 
 // ==================== 32通道 FP16 版本 ====================
 __global__ void __launch_bounds__(256, 4) span_attention_32ch_half_kernel(
-    const at::Half* __restrict__ feat_low,
-    const at::Half* __restrict__ feat_deep,
-    const at::Half* __restrict__ weight,
-    const at::Half* __restrict__ bias,
-    at::Half* __restrict__ output,
+    const half* __restrict__ feat_low,
+    const half* __restrict__ feat_deep,
+    const half* __restrict__ weight,
+    const half* __restrict__ bias,
+    half* __restrict__ output,
     int height, int width) {
     
     __align__(16) __shared__ half weight_shared[32 * 32];
@@ -370,11 +370,11 @@ at::Tensor span_attention_forward_cuda_half(
     weight = weight.contiguous();
     bias = bias.contiguous();
 
-    const at::Half* feat_low_ptr = feat_low.data_ptr<at::Half>();
-    const at::Half* feat_deep_ptr = feat_deep.data_ptr<at::Half>();
-    const at::Half* weight_ptr = weight.data_ptr<at::Half>();
-    const at::Half* bias_ptr = bias.data_ptr<at::Half>();
-    at::Half* output_ptr = output.data_ptr<at::Half>();
+    const half* feat_low_ptr = reinterpret_cast<const half*>(feat_low.data_ptr<at::Half>());
+    const half* feat_deep_ptr = reinterpret_cast<const half*>(feat_deep.data_ptr<at::Half>());
+    const half* weight_ptr = reinterpret_cast<const half*>(weight.data_ptr<at::Half>());
+    const half* bias_ptr = reinterpret_cast<const half*>(bias.data_ptr<at::Half>());
+    half* output_ptr = reinterpret_cast<half*>(output.data_ptr<at::Half>());
 
     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 

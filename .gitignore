@@ -21,3 +21,11 @@ results_run*.txt
 span_attention_op/build/
 span_attention_op/*.egg-info/
 span_attention_op/dist/
+
+# BasicSR environment and run artifacts
+.eggs/
+*.egg-info/
+datasets
+experiments/
+results/
+wandb/

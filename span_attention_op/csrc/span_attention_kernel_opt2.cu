@@ -86,11 +86,11 @@ __global__ void __launch_bounds__(256, 4) span_attention_32ch_opt2_kernel(
 
 // ==================== 32通道 FP16 优化版 ====================
 __global__ void __launch_bounds__(256, 4) span_attention_32ch_half_opt2_kernel(
-    const at::Half* __restrict__ feat_low,
-    const at::Half* __restrict__ feat_deep,
-    const at::Half* __restrict__ weight,
-    const at::Half* __restrict__ bias,
-    at::Half* __restrict__ output,
+    const half* __restrict__ feat_low,
+    const half* __restrict__ feat_deep,
+    const half* __restrict__ weight,
+    const half* __restrict__ bias,
+    half* __restrict__ output,
     int height, int width) {
     
     __align__(16) __shared__ half smem[32 * 32 + 32];
@@ -215,11 +215,11 @@ __global__ void __launch_bounds__(256, 2) span_attention_48ch_opt2_kernel(
 
 // ==================== 48通道 FP16 优化版 ====================
 __global__ void __launch_bounds__(256, 2) span_attention_48ch_half_opt2_kernel(
-    const at::Half* __restrict__ feat_low,
-    const at::Half* __restrict__ feat_deep,
-    const at::Half* __restrict__ weight,
-    const at::Half* __restrict__ bias,
-    at::Half* __restrict__ output,
+    const half* __restrict__ feat_low,
+    const half* __restrict__ feat_deep,
+    const half* __restrict__ weight,
+    const half* __restrict__ bias,
+    half* __restrict__ output,
     int height, int width) {
     
     __align__(16) __shared__ half smem[48 * 48 + 48];
@@ -353,15 +353,19 @@ at::Tensor span_attention_forward_cuda_opt2_fp16(
     if (channels == 32) {
         span_attention_32ch_half_opt2_kernel<<<blocks, 256,
             (32 * 32 + 32) * sizeof(half), stream>>>(
-            feat_low.data_ptr<at::Half>(), feat_deep.data_ptr<at::Half>(),
-            weight.data_ptr<at::Half>(), bias.data_ptr<at::Half>(),
-            output.data_ptr<at::Half>(), height, width);
+            reinterpret_cast<const half*>(feat_low.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(feat_deep.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(weight.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(bias.data_ptr<at::Half>()),
+            reinterpret_cast<half*>(output.data_ptr<at::Half>()), height, width);
     } else if (channels == 48) {
         span_attention_48ch_half_opt2_kernel<<<blocks, 256,
             (48 * 48 + 48) * sizeof(half), stream>>>(
-            feat_low.data_ptr<at::Half>(), feat_deep.data_ptr<at::Half>(),
-            weight.data_ptr<at::Half>(), bias.data_ptr<at::Half>(),
-            output.data_ptr<at::Half>(), height, width);
+            reinterpret_cast<const half*>(feat_low.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(feat_deep.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(weight.data_ptr<at::Half>()),
+            reinterpret_cast<const half*>(bias.data_ptr<at::Half>()),
+            reinterpret_cast<half*>(output.data_ptr<at::Half>()), height, width);
     } else {
         TORCH_CHECK(false, "Only 32 and 48 channels supported");
     }

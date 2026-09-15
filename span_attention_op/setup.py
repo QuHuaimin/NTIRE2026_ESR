@@ -50,7 +50,7 @@ setup(
                 'cxx': ['-O3', '--std=c++17'],
                 'nvcc': CUDA_FLAGS,
             },
-            include_dirs=[torch.utils.cpp_extension.include_paths()],
+            include_dirs=torch.utils.cpp_extension.include_paths(),
             libraries=['cudart'],
         )
     ],

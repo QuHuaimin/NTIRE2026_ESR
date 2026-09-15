@@ -14,6 +14,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 PYTHON="${PYTHON:-$(which python)}"
+export PATH="$(dirname "$(readlink -f "$PYTHON")"):$PATH"
+export CC="${CC:-/usr/bin/gcc-11}"
+export CXX="${CXX:-/usr/bin/g++-11}"
 
 echo "=============================="
 echo " span_attention CUDA operator"
@@ -22,6 +25,7 @@ echo "Script dir : $SCRIPT_DIR"
 echo "Python     : $PYTHON"
 echo "PyTorch    : $($PYTHON -c 'import torch; print(torch.__version__)')"
 echo "CUDA       : $($PYTHON -c 'import torch; print(torch.version.cuda)')"
+echo "C++        : $CXX"
 echo "=============================="
 
 "$PYTHON" -m pip install . --no-build-isolation

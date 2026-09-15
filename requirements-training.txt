@@ -1,0 +1,15 @@
+addict
+future
+lmdb
+numpy>=1.17
+opencv-python
+Pillow
+PyYAML
+requests
+scikit-image
+scipy
+tqdm
+wandb>=0.24,<0.25
+yapf
+fvcore
+gdown
