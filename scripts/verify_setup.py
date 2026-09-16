@@ -24,7 +24,7 @@ def unwrap_checkpoint(checkpoint):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset-root', default='/home/qhm/datasets')
+    parser.add_argument('--dataset-root', default='~/datasets')
     parser.add_argument('--require-flickr2k', action='store_true')
     args = parser.parse_args()
 
@@ -35,6 +35,10 @@ def main():
         str(PROJECT_ROOT / 'configs' / 'stage1_rep_safmn_fft.yaml'))
     stage2_rep = yaml_load(str(PROJECT_ROOT / 'configs' / 'stage2_rep_report.yaml'))
     for options in (stage1, stage2, stage1_rep, stage1_rep_safmn, stage2_rep):
+        for dataset in options['datasets'].values():
+            for key in ('dataroot_gt', 'dataroot_lq', 'meta_info_file'):
+                if dataset.get(key):
+                    dataset[key] = str(Path(dataset[key]).expanduser())
         assert 'use_tb_logger' not in options['logger']
         assert options['logger']['wandb']['project'] == 'SPANV2'
         assert options['num_gpu'] == 1
@@ -74,7 +78,7 @@ def main():
     assert sum(value.numel() for value in rep_model.deploy_state_dict().values()) == 139104
     print('BasicSR report losses, five YAML files, and REP deployment state OK')
 
-    root = Path(args.dataset_root)
+    root = Path(args.dataset_root).expanduser()
     div_hr = root / 'DIV2K' / 'HR'
     div_lr = root / 'DIV2K_bicubic' / 'LR' / 'X4'
     assert len(list(div_hr.glob('*.png'))) >= 900

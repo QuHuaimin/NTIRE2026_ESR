@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint', required=True)
     parser.add_argument('--param-key', default='params_ema', choices=('params', 'params_ema'))
-    parser.add_argument('--data-root', default='/home/qhm/datasets/DF2K')
+    parser.add_argument('--data-root', default='~/datasets/DF2K')
     parser.add_argument('--samples', type=int, default=8)
     parser.add_argument('--crop-size', type=int, default=512)
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -82,7 +82,7 @@ def main():
     stage1_loss = L1FFTReportLoss().to(device)
     stage2_loss = MSEGradientReportLoss().to(device)
 
-    root = Path(args.data_root)
+    root = Path(args.data_root).expanduser()
     names = [line.split()[0] for line in (root / 'meta_info_DF2K.txt').read_text().splitlines()]
     names = names[:args.samples]
     totals = {}

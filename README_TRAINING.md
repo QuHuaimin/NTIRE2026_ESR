@@ -33,7 +33,7 @@
 ## 2. 项目结构
 
 ```text
-/home/qhm/projects/SPANV2_official
+SPANV2_official
 ├── models/team22_SPANV2_ESR.py       # Team 22 官方提交模型
 ├── model_zoo/team22_spanv2_c2.pth   # Team 22 官方 checkpoint
 ├── span_attention_op/                # 官方推理算子及本机兼容补丁
@@ -62,7 +62,7 @@
 └── REPRODUCTION_CLUES.md             # 证据、差距与消融优先级
 ```
 
-数据统一放在 `/home/qhm/datasets`，项目根目录的 `datasets` 软链接指向该目录。
+数据默认统一放在 `~/datasets`。所有配置均使用可跨用户复用的 `~/datasets/...` 路径。
 
 ## 3. 环境配置
 
@@ -70,11 +70,20 @@ NTIRE 官方评测环境为 Python 3.9、PyTorch 1.13.1+cu117 和 RTX A6000。�
 11.8，因此训练环境使用 Python 3.8、PyTorch 2.4.1+cu118，使 PyTorch 与本地 CUDA 工具链
 保持一致。正式运行时间仍需在官方 A6000 环境复测。
 
+精确获取当前发布源码并创建已验证环境：
+
 ```bash
-cd /home/qhm/projects/SPANV2_official
+git clone https://github.com/QuHuaimin/NTIRE2026_ESR.git SPANV2_official
+cd SPANV2_official
+git switch --detach v0.2.1-portable
 bash scripts/setup_environment.sh
 conda activate spanv2_official
+python -m unittest -v tests.test_training_components
 ```
+
+标签对应不可变的代码快照，适合复现实验；需要持续接收更新时使用 `git switch main`。环境脚本
+会自动寻找当前 Conda，不依赖固定安装目录。训练脚本优先使用已激活的 `spanv2_official`
+环境，也可通过 `SPANV2_PYTHON=/path/to/python` 指定解释器。
 
 训练配置必须保持 `use_span_attn: false`，使用支持反向传播的纯 PyTorch 注意力路径。
 `span_attention_op` 只用于部署测速；需要时按以下方式编译：
@@ -95,13 +104,13 @@ x4。准备脚本会复用已有文件，只下载或生成缺失部分，并通
 ```bash
 conda activate spanv2_official
 python scripts/prepare_datasets.py \
-  --root /home/qhm/datasets \
+  --root ~/datasets \
   --download-flickr2k \
   --workers 4
 ```
 
 ```text
-/home/qhm/datasets
+~/datasets
 ├── DIV2K/HR                         # 0001-0900
 ├── DIV2K_bicubic/LR/X4             # 0001x4-0900x4
 ├── Flickr2K
@@ -117,7 +126,7 @@ python scripts/prepare_datasets.py \
 
 ```bash
 python scripts/prepare_datasets.py \
-  --root /home/qhm/datasets \
+  --root ~/datasets \
   --download-ntire-valid
 ```
 
@@ -172,7 +181,7 @@ PixelShuffle 不变。
 ### 6.1 Stage 1
 
 ```bash
-cd /home/qhm/projects/SPANV2_official
+cd /path/to/SPANV2_official
 bash scripts/start_rep_tmux.sh stage1
 tmux attach -t spanv2-stage1-rep
 ```
@@ -218,7 +227,7 @@ python scripts/export_spanv2_rep.py \
 优化器、学习率和 EMA 均与 REP `ortho` 基线一致。它使用独立实验目录与 W&B Run：
 
 ```bash
-cd /home/qhm/projects/SPANV2_official
+cd /path/to/SPANV2_official
 bash scripts/start_rep_tmux.sh stage1-safmn
 tmux attach -t spanv2-stage1-rep-safmn-fft
 ```
@@ -241,7 +250,7 @@ bash scripts/start_rep_tmux.sh stage1-safmn --resume-iter 100000
 对照，不是当前推荐的指标闭合路线。
 
 ```bash
-cd /home/qhm/projects/SPANV2_official
+cd /path/to/SPANV2_official
 bash scripts/start_stage1_tmux.sh
 tmux attach -t spanv2-stage1
 ```
@@ -347,7 +356,7 @@ iteration 记录一次；为控制额外开销，仅分析该 iteration 的最�
 ```bash
 python -m unittest -v tests.test_training_components
 python scripts/verify_setup.py \
-  --dataset-root /home/qhm/datasets \
+  --dataset-root ~/datasets \
   --require-flickr2k
 ```
 
@@ -356,7 +365,7 @@ python scripts/verify_setup.py \
 ```bash
 CUDA_VISIBLE_DEVICES=0 python test_demo_team22.py \
   --model_id 22 \
-  --data_dir /home/qhm/datasets/NTIRE2026_ESR \
+  --data_dir ~/datasets/NTIRE2026_ESR \
   --save_dir results/team22
 ```
 
@@ -370,6 +379,7 @@ CUDA_VISIBLE_DEVICES=0 python test_demo_team22.py \
 |---|---|---|---|
 | Ortho 基线 | `repro/ortho-fft`、`v0.1.0-ortho-fft` | `rfft2(norm="ortho")`，REP，全局 batch64 | 训练中断于 697100；最后完整 checkpoint 为 690000 |
 | SAFMN FFT | `experiment/safmn-fft`、`v0.2.0-safmn-fft` | 默认 `rfft2`，即 `norm="backward"`；其余设置与基线相同 | 当前实验 |
+| 便携复现版 | `main`、`v0.2.1-portable` | 包含上述两种 FFT 配置，移除本机绝对路径并锁定已验证依赖 | 推荐跨设备克隆 |
 
 版本只记录代码与实验协议，不提交 `experiments/`、W&B 缓存、数据集或 checkpoint。每个实验
 使用独立配置名、实验目录和 W&B Run，避免 `--auto_resume` 跨实验误恢复。

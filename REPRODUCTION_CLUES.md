@@ -72,7 +72,7 @@ near-pixel 分支、DW/PW 融合和 PixelShuffle 均不变；导出后严格兼�
 REP Stage 1：
 
 ```bash
-cd /home/qhm/projects/SPANV2_official
+cd /path/to/SPANV2_official
 bash scripts/start_rep_tmux.sh stage1
 tmux attach -t spanv2-stage1-rep
 ```

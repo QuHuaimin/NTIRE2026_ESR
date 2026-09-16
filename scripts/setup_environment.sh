@@ -3,15 +3,17 @@ set -euo pipefail
 
 ENV_NAME="${1:-spanv2_official}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONDA_BIN="${CONDA_EXE:-/home/qhm/miniconda3/bin/conda}"
+CONDA_BIN="${CONDA_EXE:-$(command -v conda || true)}"
+
+if [[ -z "${CONDA_BIN}" ]]; then
+    echo "Conda was not found. Install Miniconda/Conda and retry." >&2
+    exit 1
+fi
 
 if "${CONDA_BIN}" env list | awk '{print $1}' | grep -qx "${ENV_NAME}"; then
     echo "[skip] Conda environment already exists: ${ENV_NAME}"
 else
-    if ! "${CONDA_BIN}" env create -n "${ENV_NAME}" -f "${ROOT_DIR}/environment.yml"; then
-        echo "[fallback] Repository access failed; cloning local conda_py38 environment"
-        "${CONDA_BIN}" create -n "${ENV_NAME}" --clone conda_py38 -y
-    fi
+    "${CONDA_BIN}" env create -n "${ENV_NAME}" -f "${ROOT_DIR}/environment.yml"
 fi
 
 "${CONDA_BIN}" run -n "${ENV_NAME}" python -m pip install -e "${ROOT_DIR}" --no-deps

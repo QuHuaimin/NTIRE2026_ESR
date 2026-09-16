@@ -254,7 +254,7 @@ def prepare_ntire_valid(dataset_root: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Prepare SPANV2 FD2K datasets idempotently")
-    parser.add_argument("--root", default="/home/qhm/datasets")
+    parser.add_argument("--root", default="~/datasets")
     parser.add_argument("--scale", type=int, default=4)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--download-flickr2k", action="store_true")

@@ -174,6 +174,8 @@ def parse_options(root_path, is_train=True):
             dataset['dataroot_gt'] = osp.expanduser(dataset['dataroot_gt'])
         if dataset.get('dataroot_lq') is not None:
             dataset['dataroot_lq'] = osp.expanduser(dataset['dataroot_lq'])
+        if dataset.get('meta_info_file') is not None:
+            dataset['meta_info_file'] = osp.expanduser(dataset['meta_info_file'])
 
     # paths
     for key, val in opt['path'].items():

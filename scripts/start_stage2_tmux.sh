@@ -5,7 +5,7 @@ SESSION_NAME="spanv2-stage2"
 RESUME_ITER=""
 WANDB_RESUME_MODE=""
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON="/home/qhm/miniconda3/envs/spanv2_official/bin/python"
+PYTHON="$(bash "${PROJECT_ROOT}/scripts/resolve_python.sh")"
 GPU="${CUDA_VISIBLE_DEVICES:-0}"
 
 while [[ $# -gt 0 ]]; do

@@ -34,6 +34,24 @@ Use `start_rep_tmux.sh stage1-safmn` for the isolated SAFMN default-FFT
 normalization experiment. Version and branch conventions are documented in
 [`README_TRAINING.md`](README_TRAINING.md#13-git-版本管理).
 
+### Clone This Reproduction
+
+The personal fork's `main` branch contains the complete BasicSR training
+project. Clone the named directory so the documented commands work unchanged:
+
+```bash
+git clone https://github.com/QuHuaimin/NTIRE2026_ESR.git SPANV2_official
+cd SPANV2_official
+git switch --detach v0.2.1-portable
+bash scripts/setup_environment.sh
+```
+
+Checking out `v0.2.1-portable` reproduces the exact published source snapshot.
+Use `git switch main` instead when you want subsequent updates. Datasets,
+training checkpoints, local W&B files, and generated results are intentionally
+excluded from Git; the training guide documents their reproducible preparation
+and storage.
+
 ---
 
 ## 📰 News
